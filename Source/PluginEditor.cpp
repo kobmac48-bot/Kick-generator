@@ -4,12 +4,14 @@
 
 namespace
 {
-const std::array<juce::String, 6> parameterIds {
-    "pitchStart", "pitchEnd", "decay", "drive", "punch", "body"
+const std::array<juce::String, 8> parameterIds {
+    "pitchStart", "pitchEnd", "decay", "drive", "punch", "body",
+    "distortion", "softClip"
 };
 
-const std::array<juce::String, 6> parameterLabels {
-    "PITCH START", "PITCH END", "DECAY", "DRIVE", "PUNCH", "BODY"
+const std::array<juce::String, 8> parameterLabels {
+    "PITCH START", "PITCH END", "DECAY", "DRIVE", "PUNCH", "BODY",
+    "DISTORTION", "SOFT CLIP"
 };
 
 struct ParameterRange
@@ -18,30 +20,37 @@ struct ParameterRange
     float maximum;
 };
 
-using KickRanges = std::array<ParameterRange, 6>;
+using KickRanges = std::array<ParameterRange, 8>;
 
 constexpr std::array<KickRanges, 7> genreRanges {{
-    KickRanges {{ { 135.0f, 210.0f }, { 42.0f, 58.0f }, { 0.32f, 0.62f },
-                  { 6.5f, 11.5f }, { 0.45f, 0.85f }, { 0.35f, 0.75f } }},
-    KickRanges {{ { 165.0f, 255.0f }, { 42.0f, 70.0f }, { 0.20f, 0.42f },
-                  { 7.5f, 14.0f }, { 0.55f, 0.95f }, { 0.25f, 0.70f } }},
-    KickRanges {{ { 105.0f, 185.0f }, { 35.0f, 58.0f }, { 0.25f, 0.55f },
-                  { 9.0f, 16.0f }, { 0.35f, 0.70f }, { 0.25f, 0.65f } }},
-    KickRanges {{ { 145.0f, 240.0f }, { 48.0f, 82.0f }, { 0.38f, 0.72f },
-                  { 6.0f, 12.0f }, { 0.50f, 0.90f }, { 0.40f, 0.85f } }},
-    KickRanges {{ { 125.0f, 220.0f }, { 38.0f, 66.0f }, { 0.22f, 0.48f },
-                  { 9.0f, 17.0f }, { 0.45f, 0.85f }, { 0.25f, 0.70f } }},
-    KickRanges {{ { 155.0f, 250.0f }, { 46.0f, 76.0f }, { 0.34f, 0.72f },
-                  { 6.0f, 12.0f }, { 0.60f, 1.00f }, { 0.40f, 0.85f } }},
-    KickRanges {{ { 180.0f, 290.0f }, { 38.0f, 65.0f }, { 0.14f, 0.36f },
-                  { 10.0f, 18.0f }, { 0.55f, 1.00f }, { 0.20f, 0.60f } }}
+    KickRanges {{ { 240.0f, 430.0f }, { 42.0f, 58.0f }, { 0.28f, 0.55f },
+                  { 8.0f, 13.0f }, { 0.62f, 0.96f }, { 0.40f, 0.78f },
+                  { 48.0f, 78.0f }, { 26.0f, 58.0f } }},
+    KickRanges {{ { 320.0f, 640.0f }, { 40.0f, 62.0f }, { 0.18f, 0.36f },
+                  { 11.0f, 17.0f }, { 0.78f, 1.00f }, { 0.35f, 0.72f },
+                  { 72.0f, 96.0f }, { 48.0f, 82.0f } }},
+    KickRanges {{ { 260.0f, 560.0f }, { 36.0f, 58.0f }, { 0.22f, 0.45f },
+                  { 11.0f, 17.0f }, { 0.58f, 0.88f }, { 0.28f, 0.66f },
+                  { 68.0f, 94.0f }, { 42.0f, 76.0f } }},
+    KickRanges {{ { 210.0f, 450.0f }, { 46.0f, 80.0f }, { 0.34f, 0.66f },
+                  { 7.0f, 12.0f }, { 0.58f, 0.94f }, { 0.42f, 0.86f },
+                  { 50.0f, 82.0f }, { 28.0f, 62.0f } }},
+    KickRanges {{ { 340.0f, 720.0f }, { 36.0f, 58.0f }, { 0.18f, 0.38f },
+                  { 13.0f, 18.0f }, { 0.82f, 1.00f }, { 0.38f, 0.78f },
+                  { 80.0f, 100.0f }, { 62.0f, 92.0f } }},
+    KickRanges {{ { 240.0f, 500.0f }, { 44.0f, 74.0f }, { 0.30f, 0.62f },
+                  { 7.0f, 12.0f }, { 0.65f, 1.00f }, { 0.42f, 0.84f },
+                  { 42.0f, 72.0f }, { 20.0f, 54.0f } }},
+    KickRanges {{ { 380.0f, 760.0f }, { 36.0f, 64.0f }, { 0.14f, 0.32f },
+                  { 12.0f, 18.0f }, { 0.72f, 1.00f }, { 0.28f, 0.66f },
+                  { 76.0f, 98.0f }, { 56.0f, 90.0f } }}
 }};
 }
 
 KickForgeAudioProcessorEditor::KickForgeAudioProcessorEditor(KickForgeAudioProcessor& p)
     : AudioProcessorEditor(&p), processor(p)
 {
-    setSize(650, 420);
+    setSize(850, 420);
 
     genreLabel.setText("STYLE", juce::dontSendNotification);
     genreLabel.setColour(juce::Label::textColourId, juce::Colours::lightgrey);
@@ -64,6 +73,8 @@ KickForgeAudioProcessorEditor::KickForgeAudioProcessorEditor(KickForgeAudioProce
         auto& slider = sliders[index];
         slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         slider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 82, 22);
+        if (index >= 6)
+            slider.setNumDecimalPlacesToDisplay(0);
         slider.setColour(juce::Slider::rotarySliderFillColourId, juce::Colour(0xffef6a3a));
         slider.setColour(juce::Slider::thumbColourId, juce::Colours::white);
         addAndMakeVisible(slider);
@@ -110,7 +121,8 @@ void KickForgeAudioProcessorEditor::paint(juce::Graphics& graphics)
 
     graphics.setColour(juce::Colour(0xffa4a8ae));
     graphics.setFont(juce::Font(12.0f));
-    graphics.drawText("HARDCORE KICK SYNTH", 26, 58, 280, 20, juce::Justification::left);
+    graphics.drawText("HARDCORE KICK SYNTH  |  DISTORTION + SOFT CLIP",
+                      26, 58, 480, 20, juce::Justification::left);
     graphics.drawText("Randomize and preview a kick, or play MIDI notes to trigger kicks",
                       26, getHeight() - 28,
                       getWidth() - 52, 18, juce::Justification::centredLeft);

@@ -15,70 +15,26 @@ struct GenreProfile
     float driveScale;
     float punchScale;
     float brightness;
+    float distortionScale;
+    float softClipScale;
+    float sweepScale;
+    float tailToneScale;
 };
 
 constexpr std::array<GenreProfile, 7> genreProfiles {{
-    { 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 0.85f }, // Gabber
-    { 1.28f, 0.92f, 0.72f, 1.35f, 1.18f, 1.15f }, // Uptempo
-    { 0.80f, 0.75f, 0.90f, 1.55f, 0.85f, 1.25f }, // Zaag
-    { 1.12f, 1.08f, 1.20f, 1.22f, 1.12f, 1.00f }, // Rawstyle
-    { 0.92f, 0.82f, 0.82f, 1.72f, 1.05f, 1.35f }, // Deutsche Krach
-    { 1.18f, 0.98f, 1.05f, 1.12f, 1.25f, 0.95f }, // Frenchcore
-    { 1.35f, 0.88f, 0.58f, 1.88f, 1.15f, 1.42f }  // Terror
+    { 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 0.90f, 0.92f, 0.90f, 1.00f, 1.00f }, // Gabber
+    { 1.08f, 0.92f, 0.78f, 1.32f, 1.14f, 1.18f, 1.20f, 1.12f, 0.78f, 1.12f }, // Uptempo
+    { 0.92f, 0.82f, 0.92f, 1.45f, 0.92f, 1.24f, 1.16f, 1.10f, 0.88f, 1.20f }, // Zaag
+    { 1.08f, 1.08f, 1.12f, 1.18f, 1.08f, 1.02f, 1.05f, 1.00f, 1.05f, 1.00f }, // Rawstyle
+    { 1.12f, 0.86f, 0.84f, 1.52f, 1.10f, 1.30f, 1.32f, 1.24f, 0.72f, 1.18f }, // Deutsche Krach
+    { 1.16f, 0.98f, 1.05f, 1.10f, 1.18f, 0.96f, 0.98f, 0.96f, 1.00f, 0.95f }, // Frenchcore
+    { 1.22f, 0.88f, 0.62f, 1.58f, 1.10f, 1.36f, 1.30f, 1.24f, 0.70f, 1.22f }  // Terror
 }};
 
 const juce::StringArray genreNames {
     "Gabber", "Uptempo", "Zaag", "Rawstyle",
     "Deutsche Krach", "Frenchcore", "Terror"
 };
-}
-
-void KickForgeAudioProcessor::KickVoice::trigger(float noteVelocity,
-                                                  float initialPitch,
-                                                  std::uint32_t seed)
-{
-    active = true;
-    velocity = noteVelocity;
-    phase = 0.0f;
-    elapsed = 0.0f;
-    pitchStart = initialPitch;
-    noiseState = seed == 0 ? 1u : seed;
-}
-
-float KickForgeAudioProcessor::KickVoice::render(float sampleRate, float pitchEnd,
-                                                 float decay, float drive, float punch,
-                                                 float body, float genreBrightness)
-{
-    if (! active)
-        return 0.0f;
-
-    const auto normalizedTime = juce::jlimit(0.0f, 1.0f, elapsed / decay);
-    const auto pitch = pitchStart * std::pow(pitchEnd / pitchStart, normalizedTime);
-    phase += juce::MathConstants<float>::twoPi * pitch / sampleRate;
-    if (phase >= juce::MathConstants<float>::twoPi)
-        phase = std::fmod(phase, juce::MathConstants<float>::twoPi);
-
-    const auto envelope = std::exp(-5.0f * elapsed / decay);
-    const auto fundamental = std::sin(phase);
-    const auto secondHarmonic = std::sin(phase * 2.0f) * 0.24f * body;
-    const auto thirdHarmonic = std::sin(phase * 3.0f) * 0.10f * body * genreBrightness;
-
-    noiseState ^= noiseState << 13;
-    noiseState ^= noiseState >> 17;
-    noiseState ^= noiseState << 5;
-    const auto noise = static_cast<float>(noiseState & 0xffffu) / 32767.5f - 1.0f;
-    const auto transientEnvelope = std::exp(-95.0f * elapsed / decay);
-    const auto transient = noise * transientEnvelope * punch * genreBrightness * 0.17f;
-
-    const auto raw = (fundamental + secondHarmonic + thirdHarmonic) * envelope + transient;
-    const auto normalizedDrive = juce::jmax(1.0f, drive);
-    const auto output = std::tanh(raw * normalizedDrive) / std::tanh(normalizedDrive);
-
-    elapsed += 1.0f / sampleRate;
-    if (elapsed >= decay * 1.5f)
-        active = false;
-
-    return output * velocity * 0.82f;
 }
 
 KickForgeAudioProcessor::KickForgeAudioProcessor()
@@ -95,7 +51,7 @@ KickForgeAudioProcessor::createParameterLayout()
         juce::ParameterID { "genre", 1 }, "Genre", genreNames, 0));
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "pitchStart", 1 }, "Pitch Start",
-        juce::NormalisableRange<float>(70.0f, 300.0f, 1.0f), 165.0f));
+        juce::NormalisableRange<float>(70.0f, 900.0f, 1.0f), 320.0f));
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "pitchEnd", 1 }, "Pitch End",
         juce::NormalisableRange<float>(35.0f, 100.0f, 1.0f), 48.0f));
@@ -111,6 +67,12 @@ KickForgeAudioProcessor::createParameterLayout()
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "body", 1 }, "Body",
         juce::NormalisableRange<float>(0.0f, 1.0f, 0.01f), 0.55f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "distortion", 1 }, "Distortion",
+        juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 65.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID { "softClip", 1 }, "Soft Clip",
+        juce::NormalisableRange<float>(0.0f, 100.0f, 1.0f), 38.0f));
     return layout;
 }
 
@@ -121,7 +83,7 @@ void KickForgeAudioProcessor::prepareToPlay(double sampleRate, int)
 
 void KickForgeAudioProcessor::releaseResources()
 {
-    voice.active = false;
+    voice.stop();
 }
 
 bool KickForgeAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -157,7 +119,23 @@ void KickForgeAudioProcessor::processBlock(juce::AudioBuffer<float>& audio,
     const auto punch = parameters.getRawParameterValue("punch")->load()
                      * profile.punchScale;
     const auto body = parameters.getRawParameterValue("body")->load();
+    const auto distortion = parameters.getRawParameterValue("distortion")->load() * 0.01f;
+    const auto softClip = parameters.getRawParameterValue("softClip")->load() * 0.01f;
     const auto channelCount = audio.getNumChannels();
+    const KickSoundParameters soundParameters {
+        pitchEnd,
+        decay,
+        drive,
+        punch,
+        body,
+        distortion,
+        softClip,
+        profile.brightness,
+        profile.distortionScale,
+        profile.softClipScale,
+        profile.sweepScale,
+        profile.tailToneScale
+    };
 
     for (int sample = 0; sample < audio.getNumSamples(); ++sample)
     {
@@ -179,8 +157,7 @@ void KickForgeAudioProcessor::processBlock(juce::AudioBuffer<float>& audio,
         }
 
         const auto output = voice.render(static_cast<float>(currentSampleRate),
-                                         pitchEnd, decay, drive, punch,
-                                         body, profile.brightness);
+                                         soundParameters);
         for (int channel = 0; channel < channelCount; ++channel)
             audio.setSample(channel, sample, output);
     }

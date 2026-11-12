@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(KickForge VERSION 1.0.0 LANGUAGES CXX)
+project(KickForge VERSION 1.1.0 LANGUAGES CXX)
+
+include(CTest)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -27,6 +29,7 @@ juce_add_plugin(KickForge
 )
 
 target_sources(KickForge PRIVATE
+    Source/KickSynth.cpp
     Source/PluginEditor.cpp
     Source/PluginProcessor.cpp
 )
@@ -39,3 +42,13 @@ target_link_libraries(KickForge PRIVATE
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags
 )
+
+if(BUILD_TESTING)
+    add_executable(KickForgeDspTests
+        Source/KickSynth.cpp
+        tests/KickForgeDspTests.cpp
+    )
+    target_include_directories(KickForgeDspTests PRIVATE Source)
+    target_compile_features(KickForgeDspTests PRIVATE cxx_std_17)
+    add_test(NAME KickForgeDspTests COMMAND KickForgeDspTests)
+endif()
