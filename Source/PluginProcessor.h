@@ -1,5 +1,7 @@
 #pragma once
 
+#include "KickSynth.h"
+
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <atomic>
 #include <cstdint>
@@ -37,24 +39,10 @@ public:
     juce::AudioProcessorValueTreeState parameters;
 
 private:
-    struct KickVoice
-    {
-        void trigger(float noteVelocity, float initialPitch, std::uint32_t noiseSeed);
-        float render(float sampleRate, float pitchEnd, float decay, float drive,
-                     float punch, float body, float genreBrightness);
-
-        bool active = false;
-        float velocity = 1.0f;
-        float phase = 0.0f;
-        float elapsed = 0.0f;
-        float pitchStart = 165.0f;
-        std::uint32_t noiseState = 1;
-    };
-
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     double currentSampleRate = 44100.0;
-    KickVoice voice;
+    KickSynth voice;
     std::atomic<bool> previewRequested { false };
     std::uint32_t previewSeed = 1;
 
