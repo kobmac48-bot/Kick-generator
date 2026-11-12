@@ -6,8 +6,11 @@ your DAW.
 
 ## Styles
 
-Gabber, Uptempo, Zaag, Rawstyle, Deutsche Krach, Frenchcore, and Terror each
-have a distinct pitch sweep, decay, saturation, punch, and brightness profile.
+Gabber, Uptempo, Bouncy Uptempo, Zaag, Rawstyle, Deutsche Krach, Frenchcore,
+and Terror each have a distinct pitch sweep, decay, saturation, punch, and
+brightness profile. Bouncy Uptempo adds a decaying rhythmic tail pulse, while
+standard Uptempo stays direct. Deutsche Krach is brighter and crunchier;
+Frenchcore has a shorter pitch sweep and a sharper click.
 Kicks start with a short click, drop quickly from a high pitch into a solid low
 fundamental, then fade through a tone-shaped distorted tail. The Pitch Start,
 Pitch End, Decay, Drive, Punch, Body, Distortion, and Soft Clip controls shape
@@ -35,7 +38,7 @@ The VST3 bundle is written under `build/KickForge_artefacts/Release/VST3`.
 Copy it to your system's VST3 plug-in folder or point your DAW at that folder.
 
 On Windows, install Inno Setup 6 and build the installer after building the
-VST3:
+VST3. This writes `KickForge-Setup-1.2.0-x64.exe`:
 
 ```powershell
 & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" `

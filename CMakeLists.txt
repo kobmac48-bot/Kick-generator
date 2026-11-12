@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(KickForge VERSION 1.1.0 LANGUAGES CXX)
+project(KickForge VERSION 1.2.0 LANGUAGES CXX)
 
 include(CTest)
 

@@ -22,7 +22,7 @@ struct ParameterRange
 
 using KickRanges = std::array<ParameterRange, 8>;
 
-constexpr std::array<KickRanges, 7> genreRanges {{
+constexpr std::array<KickRanges, 8> genreRanges {{
     KickRanges {{ { 240.0f, 430.0f }, { 42.0f, 58.0f }, { 0.28f, 0.55f },
                   { 8.0f, 13.0f }, { 0.62f, 0.96f }, { 0.40f, 0.78f },
                   { 48.0f, 78.0f }, { 26.0f, 58.0f } }},
@@ -43,7 +43,10 @@ constexpr std::array<KickRanges, 7> genreRanges {{
                   { 42.0f, 72.0f }, { 20.0f, 54.0f } }},
     KickRanges {{ { 380.0f, 760.0f }, { 36.0f, 64.0f }, { 0.14f, 0.32f },
                   { 12.0f, 18.0f }, { 0.72f, 1.00f }, { 0.28f, 0.66f },
-                  { 76.0f, 98.0f }, { 56.0f, 90.0f } }}
+                  { 76.0f, 98.0f }, { 56.0f, 90.0f } }},
+    KickRanges {{ { 300.0f, 620.0f }, { 40.0f, 62.0f }, { 0.22f, 0.42f },
+                  { 10.0f, 16.0f }, { 0.74f, 1.00f }, { 0.36f, 0.72f },
+                  { 68.0f, 92.0f }, { 42.0f, 76.0f } }}
 }};
 }
 
@@ -57,8 +60,8 @@ KickForgeAudioProcessorEditor::KickForgeAudioProcessorEditor(KickForgeAudioProce
     genreLabel.setFont(juce::Font(12.0f, juce::Font::bold));
     addAndMakeVisible(genreLabel);
 
-    genreBox.addItemList({ "Gabber", "Uptempo", "Zaag", "Rawstyle",
-                           "Deutsche Krach", "Frenchcore", "Terror" }, 1);
+    genreBox.addItemList(
+        juce::StringArray(kickGenreNames.data(), static_cast<int>(kickGenreNames.size())), 1);
     addAndMakeVisible(genreBox);
     genreAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
         processor.parameters, "genre", genreBox);

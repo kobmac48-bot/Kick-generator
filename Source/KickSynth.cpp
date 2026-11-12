@@ -77,11 +77,14 @@ float KickSynth::render(float sampleRate, const KickSoundParameters& parameters)
     const auto highPassedNoise = noise - previousNoise;
     previousNoise = noise;
     const auto clickEnvelope = std::exp(-elapsed / (0.0035f + punch * 0.0065f));
-    const auto clickFrequency = std::min(sampleRate * 0.30f, 2400.0f + brightness * 500.0f);
+    const auto clickFrequencyScale = bounded(parameters.clickFrequencyScale, 0.7f, 1.6f, 1.0f);
+    const auto clickFrequency = std::min(sampleRate * 0.30f,
+                                          (2400.0f + brightness * 500.0f) * clickFrequencyScale);
     clickPhase += twoPi * clickFrequency / sampleRate;
     if (clickPhase >= twoPi)
         clickPhase -= twoPi;
-    const auto click = clickEnvelope * punch
+    const auto clickScale = bounded(parameters.clickScale, 0.5f, 1.6f, 1.0f);
+    const auto click = clickEnvelope * punch * clickScale
                      * (highPassedNoise * 0.105f + std::sin(clickPhase) * 0.19f);
 
     const auto baseDrive = 1.0f + (drive - 1.0f) * 0.40f;
@@ -100,7 +103,12 @@ float KickSynth::render(float sampleRate, const KickSoundParameters& parameters)
     tailFilter += filterCoefficient * (shapedBody - tailFilter);
 
     const auto sub = fundamental * (0.30f + 0.12f * body);
-    auto bodySignal = (sub + tailFilter * 0.78f) * envelope;
+    const auto bounce = bounded(parameters.bounce, 0.0f, 1.0f, 0.0f);
+    const auto bouncePhase = std::min(twoPi * 10.5f * elapsed, twoPi * 12.0f);
+    const auto bounceDip = 1.0f - bounce * 0.38f
+                                      * (0.5f - 0.5f * std::cos(bouncePhase))
+                                      * std::exp(-elapsed / (decay * 0.72f));
+    auto bodySignal = (sub + tailFilter * 0.78f) * envelope * bounceDip;
     const auto clipAmount = std::clamp(softClip, 0.0f, 1.0f);
     const auto clipThreshold = 1.0f - clipAmount * 0.68f;
     const auto clippedBody = clipThreshold * std::tanh(bodySignal / clipThreshold);

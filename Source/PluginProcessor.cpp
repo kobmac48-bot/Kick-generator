@@ -7,34 +7,6 @@
 
 namespace
 {
-struct GenreProfile
-{
-    float pitchStartScale;
-    float pitchEndScale;
-    float decayScale;
-    float driveScale;
-    float punchScale;
-    float brightness;
-    float distortionScale;
-    float softClipScale;
-    float sweepScale;
-    float tailToneScale;
-};
-
-constexpr std::array<GenreProfile, 7> genreProfiles {{
-    { 1.00f, 1.00f, 1.00f, 1.00f, 1.00f, 0.90f, 0.92f, 0.90f, 1.00f, 1.00f }, // Gabber
-    { 1.08f, 0.92f, 0.78f, 1.32f, 1.14f, 1.18f, 1.20f, 1.12f, 0.78f, 1.12f }, // Uptempo
-    { 0.92f, 0.82f, 0.92f, 1.45f, 0.92f, 1.24f, 1.16f, 1.10f, 0.88f, 1.20f }, // Zaag
-    { 1.08f, 1.08f, 1.12f, 1.18f, 1.08f, 1.02f, 1.05f, 1.00f, 1.05f, 1.00f }, // Rawstyle
-    { 1.12f, 0.86f, 0.84f, 1.52f, 1.10f, 1.30f, 1.32f, 1.24f, 0.72f, 1.18f }, // Deutsche Krach
-    { 1.16f, 0.98f, 1.05f, 1.10f, 1.18f, 0.96f, 0.98f, 0.96f, 1.00f, 0.95f }, // Frenchcore
-    { 1.22f, 0.88f, 0.62f, 1.58f, 1.10f, 1.36f, 1.30f, 1.24f, 0.70f, 1.22f }  // Terror
-}};
-
-const juce::StringArray genreNames {
-    "Gabber", "Uptempo", "Zaag", "Rawstyle",
-    "Deutsche Krach", "Frenchcore", "Terror"
-};
 }
 
 KickForgeAudioProcessor::KickForgeAudioProcessor()
@@ -48,7 +20,9 @@ KickForgeAudioProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     layout.add(std::make_unique<juce::AudioParameterChoice>(
-        juce::ParameterID { "genre", 1 }, "Genre", genreNames, 0));
+        juce::ParameterID { "genre", 1 }, "Genre",
+        juce::StringArray(kickGenreNames.data(),
+                          static_cast<int>(kickGenreNames.size())), 0));
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID { "pitchStart", 1 }, "Pitch Start",
         juce::NormalisableRange<float>(70.0f, 900.0f, 1.0f), 320.0f));
@@ -105,9 +79,9 @@ void KickForgeAudioProcessor::processBlock(juce::AudioBuffer<float>& audio,
     auto hasEvent = midiIterator.getNextEvent(message, eventSample);
 
     const auto selectedGenre = parameters.getRawParameterValue("genre")->load();
-    const auto genreIndex = juce::jlimit(0, static_cast<int>(genreProfiles.size()) - 1,
+    const auto genreIndex = juce::jlimit(0, static_cast<int>(kickGenreProfiles.size()) - 1,
         static_cast<int>(std::lround(selectedGenre)));
-    const auto profile = genreProfiles[static_cast<std::size_t>(genreIndex)];
+    const auto profile = kickGenreProfiles[static_cast<std::size_t>(genreIndex)];
     const auto pitchStart = parameters.getRawParameterValue("pitchStart")->load()
                           * profile.pitchStartScale;
     const auto pitchEnd = parameters.getRawParameterValue("pitchEnd")->load()
@@ -134,7 +108,10 @@ void KickForgeAudioProcessor::processBlock(juce::AudioBuffer<float>& audio,
         profile.distortionScale,
         profile.softClipScale,
         profile.sweepScale,
-        profile.tailToneScale
+        profile.tailToneScale,
+        profile.bounce,
+        profile.clickScale,
+        profile.clickFrequencyScale
     };
 
     for (int sample = 0; sample < audio.getNumSamples(); ++sample)
